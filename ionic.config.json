@@ -1,0 +1,8 @@
+{
+  "name": "Banana",
+  "app_id": "e058ad5b",
+  "type": "ionic-angular",
+  "integrations": {
+    "cordova": {}
+  }
+}
