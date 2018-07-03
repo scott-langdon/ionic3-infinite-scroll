@@ -9,15 +9,17 @@ import { CommonProvider } from '../../providers/common/common';
 })
 export class HomePage {
 
-  userDetails : any;
-  responseData: any;
-  dataSet : any; 
+  public userDetails : any;
+  public responseData: any;
+  public dataSet : any;
+  public noRecords: boolean; 
 
   userPostData = {
     "user_id":"",
     "token":"", 
     "feed":"",
-    "feed_id":""
+    "feed_id":"",
+    "lastCreated":""
   };
 
   constructor(
@@ -31,6 +33,7 @@ export class HomePage {
   	this.userDetails = data.userData;
   	this.userPostData.user_id = this.userDetails.user_id;
   	this.userPostData.token = this.userDetails.token;
+    this.userPostData.lastCreated = "";
     this.getFeed();
   }
 
@@ -40,12 +43,42 @@ export class HomePage {
       this.responseData = result; 
         if(this.responseData.feedData) {
           this.commom.closeLoading();
-          this.dataSet = this.responseData.feedData; 
+          this.dataSet = this.responseData.feedData;
           console.log(this.dataSet);
+          let dataLength = this.dataSet.length;
+          this.userPostData.lastCreated = this.dataSet[dataLength - 1].created; // last one created on the list that is currently being shown on the page before loading and adding more...
+          console.log("Last created: " + this.userPostData.lastCreated);
         } else {}
       }, (err) => {
         // connection failed message
       }); 
+  }
+
+  doInfinite(): Promise<any> {
+    console.log('Begin async operation');
+    return new Promise(resolve => {
+      setTimeout(() => {
+        this.authService.postData(this.userPostData, "feed").then(
+          result => {
+            this.responseData = result;
+            if(this.responseData.feedData.length) {
+              const newData = this.responseData.feedData;
+              this.userPostData.lastCreated = this.responseData.feedData[newData.length - 1].created;
+              for(let i=0; i<newData.length; i++){
+                this.dataSet.push(newData[i]);
+              }
+            } else {
+              this.noRecords = true; 
+              console.log("No user updates");
+            }
+          }, (err) => {
+            // connection failed message
+          }
+        );
+        console.log('Async operation has ended');
+        resolve(); 
+      }, 500);
+    });
   }
 
   feedUpdate() {
